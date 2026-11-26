@@ -58,6 +58,16 @@ js = rep(js, "'mostly dry'}${w.hi<20?", "'no showers expected'}${w.hi<20?")
 
 js = rep(js, "return head+al+`<div class=\"today2\">", "return head+al+nowBlock(di)+`<div class=\"today2\">")
 
+# Today: rides widget above budget widget; rename Waits to Ride planner
+_fi = js.index('   <div class="card"><h2>Food today')
+_si = js.index('   <div class="card"><h2>Shortest now')
+_end = js.index('\n  </div>\n </div>`;', _si)
+food = js[_fi:_si]; short = js[_si:_end]
+js = js[:_fi] + short + '\n' + food.rstrip('\n') + js[_end:]
+js = rep(js, "['queues','Waits']", "['queues','Ride planner']")
+js = rep(js, "<h1>Waits</h1>", "<h1>Ride planner</h1>")
+js = rep(js, ">All waits ›</a>", ">Ride planner ›</a>")
+
 css = css.rstrip() + """
 /* Trip dates (2026-11-26) */
 .trd{display:grid;grid-template-columns:1fr 1fr;gap:10px}

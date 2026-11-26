@@ -29,7 +29,7 @@ const SAMPLE=[
  ['2027-01-08','Fri 8 Jan',[],'moderate','Departure day']];
 let DAYS=SAMPLE;
 const BUDGET=[['Breakfast',75],['Lunch',125],['Dinner',200],['Snacks and drinks',75],['Treats and contingency',25]];
-const NAV=[['g','On the day'],['today','Today'],['queues','Waits'],['planner','Plan'],['g','Before the trip'],['calendar','Calendar'],['mustdos','Must-dos'],['g','Money'],['dining','Eat'],['budget','Spend'],['g',''],['settings','Settings']];
+const NAV=[['g','On the day'],['today','Today'],['queues','Ride planner'],['planner','Plan'],['g','Before the trip'],['calendar','Calendar'],['mustdos','Must-dos'],['g','Money'],['dining','Eat'],['budget','Spend'],['g',''],['settings','Settings']];
 const hs=s=>{let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};
 const rng=seed=>()=>{seed=(seed+0x6D2B79F5)|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
 const hours=(r,di)=>[PARKS[r.park].open-(r.ee&&S.set.epa!==false?60:0),PARKS[r.park].close+(late(di)?60:0)];
@@ -233,12 +233,12 @@ function viewToday(){
   <div class="card" style="padding:20px 22px">${nxh}
    ${up.length?`<div style="margin-top:16px"><div class="mute" style="font-size:13.5px;margin-bottom:2px">Then</div>${up.map(i=>`<div class="sp"><span><b class="nw">${fmt(i.t)}</b> ${esc(i.title)}</span></div>`).join('')}</div>`:''}</div>
   <div style="display:grid;gap:16px">
+   <div class="card"><h2>Shortest now <a class="more" href="#queues" style="font:600 14px Inter,sans-serif">Ride planner ›</a></h2>
+    ${sh.length?sh.map(({r,w})=>`<button type="button" class="wl" data-a="go" data-id="${r.id}"><span class="wn">${esc(SHORT[r.id])}</span><span class="wv">${w}m</span><span class="meter"><i style="width:${pct(w,mx)}%;background:var(--${r.park})"></i></span></button>`).join(''):`<div class="empty">${p?'Park is closed at this time.':'Rest day.'}</div>`}</div>
    <div class="card"><h2>Food today <a class="more" href="#budget" style="font:600 14px Inter,sans-serif">Spend ›</a></h2>
     <div class="row"><span class="fig1 ${left<0?'up':''}">${left<0?usd(-left)+' over':usd(left)+' left'}</span><span class="mute nw">of ${usd(S.daily)}</span></div>
     <div class="meter" style="margin-top:8px;height:9px"><i class="${left<0?'over':''}" style="width:${pct(sp,S.daily)}%"></i></div>
     <div class="row mute" style="margin-top:8px;font-size:14px"><span>Trip ${usd(tot)} of ${usd(S.daily*DAYS.length)}</span><span class="nw ${pace<0?'up':'ok'}">${usd(Math.abs(pace))} ${pace<0?'over':'under'} pace</span></div></div>
-   <div class="card"><h2>Shortest now <a class="more" href="#queues" style="font:600 14px Inter,sans-serif">All waits ›</a></h2>
-    ${sh.length?sh.map(({r,w})=>`<button type="button" class="wl" data-a="go" data-id="${r.id}"><span class="wn">${esc(SHORT[r.id])}</span><span class="wv">${w}m</span><span class="meter"><i style="width:${pct(w,mx)}%;background:var(--${r.park})"></i></span></button>`).join(''):`<div class="empty">${p?'Park is closed at this time.':'Rest day.'}</div>`}</div>
   </div>
  </div>`;
 }
@@ -260,7 +260,7 @@ function viewQueues(){
  if(!RID[S.sel]||RID[S.sel].park!==p)S.sel=(rows[0]||all[0]).r.id;
  const r=RID[S.sel],v=sim(r,di,m,cr),b=bestFor(r,di,m),pk=peak(r,di),inPlan=items(di).find(i=>i.ride===r.id),y=ob&&ob.rd[r.id];
  const mx=Math.max(60,...open.map(x=>x.v.w));
- return `<div class="hd"><div><h1>Waits</h1><p>${PARKS[p].name} · ${DAYS[di][1]} at ${fmt(m)} · typical waits from historic patterns</p></div>
+ return `<div class="hd"><div><h1>Ride planner</h1><p>${PARKS[p].name} · ${DAYS[di][1]} at ${fmt(m)} · typical waits from historic patterns</p></div>
   <div class="seg" role="group" aria-label="Park">${Object.entries(PARKS).map(([k,x])=>`<button type="button" class="${k===p?'on':''}" data-a="qpark" data-p="${k}"><span class="pdot" style="background:var(--${k})"></span>${x.short}</button>`).join('')}</div></div>
  <div class="info" style="margin-bottom:14px"><span><b>Estimates, not live waits.</b> In the park, check the official Universal app, then use Re-plan from here to correct today's plan.</span><button type="button" class="btn" style="min-height:34px;padding:4px 12px" data-a="replan">Re-plan from here</button></div>
  <div class="tool"><input id="q" type="search" placeholder="Search rides or areas" value="${esc(S.q)}" aria-label="Search rides">
