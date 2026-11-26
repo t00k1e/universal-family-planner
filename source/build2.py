@@ -49,12 +49,26 @@ js = rep(js, ":'No must-dos fit the parks planned for this day.';", ":'No must-d
 
 js = rep(js, """<div class="addf">${must.length?'<button type="button" class="btn" data-a="planday">Plan my day</button>':''}""", """<div class="addf">${must.length||ps(di).length?'<button type="button" class="btn" data-a="planday">Plan my day</button>':''}""")
 
+js = rep(js, "${w?w.hi+'°C'+(w.storm?', showers '+fmt(w.storm[0])+'–'+fmt(w.storm[1]):', dry'):'no forecast yet'}", "${wxShort(di)}")
+js = rep(js, "${WX[i]?WX[i].hi+'°C · '+(WX[i].storm?WX[i].storm[2]+'% showers':'dry'):'forecast later'}", "${WX[i]?WX[i].hi+'°C · '+(WX[i].storm?WX[i].storm[2]+'% showers':(WX[i].code!=null?WMO(WX[i].code).toLowerCase():'dry')):'forecast later'}")
+js = rep(js, "const cells=[];for(let m=420;m<1320;m+=60){const r=rainAt(di,m);", "const cells=[],td=isToday(di),nm=orlandoNow().min;for(let m=420;m<1320;m+=60){const r=rainAt(di,m),past=td&&m+60<=nm;")
+js = rep(js, '<span class="wxc" title="${fmt(m)}: ${r}% chance', '<span class="wxc${past?\' past\':\'\'}" title="${fmt(m)}: ${r}% chance')
+js = rep(js, 'return `<div class="wx"><div class="row" style="font-size:14px"><span><b>${w.hi}°C</b> / ${w.lo}°C · ', 'return `<div class="wx">${nowBlock(di)}<div class="row" style="font-size:14px"><span>${td?\'<span class="mute">Rest of today · </span>\':\'\'}<b>${restHL(di,w)[0]}°C</b> / ${restHL(di,w)[1]}°C · ${wxLbl(w)?wxLbl(w)+\' · \':\'\'}')
+js = rep(js, "'mostly dry'}${w.hi<20?", "'no showers expected'}${w.hi<20?")
+
+js = rep(js, "return head+al+`<div class=\"today2\">", "return head+al+nowBlock(di)+`<div class=\"today2\">")
+
 css = css.rstrip() + """
 /* Trip dates (2026-11-26) */
 .trd{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .trd label{display:grid;gap:4px;font-size:14px;font-weight:600}
 .trd input{font:inherit;font-size:16px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--bg);color:var(--ink);min-height:42px;width:100%;box-sizing:border-box}
 @media(max-width:900px){main select{max-width:100%;min-width:0}}
+.wxnow{display:grid;gap:4px;padding:10px 12px;margin:0 0 12px;border-radius:10px;background:var(--soft)}
+.wxnow>div:first-child{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.wxnow b{font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+.wxnow .mute{font-size:13.5px}
+.wxc.past{opacity:.35}
 """
 (out/'app.css').write_text(css)
 (out/'app.js').write_text(js)

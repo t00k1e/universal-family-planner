@@ -86,7 +86,7 @@ document.addEventListener('click',e=>{
  if(a==='tripok'&&tripPending)useTrip(tripPending.start,tripPending.end);
 });
 // ---- Live Orlando forecast (Open-Meteo, free, no key) ----
-const FC_URL='https://api.open-meteo.com/v1/forecast?latitude=28.4744&longitude=-81.4678&hourly=temperature_2m,precipitation_probability&timezone=America%2FNew_York&forecast_days=16';
+const FC_URL='https://api.open-meteo.com/v1/forecast?latitude=28.4744&longitude=-81.4678&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m,precipitation&hourly=temperature_2m,precipitation_probability,weather_code&timezone=America%2FNew_York&forecast_days=16';
 const FC_DAYS=16;
 function fcDay(iso){
  const f=S.fc&&S.fc.d&&S.fc.d[iso];if(!f)return null;
@@ -95,10 +95,13 @@ function fcDay(iso){
  const day=t.slice(7,22).filter(x=>x!=null);
  let best=null,run=null;
  for(let h=7;h<22;h++){if(p[h]>=40){if(!run)run=[h,h,p[h]];run[1]=h;run[2]=Math.max(run[2],p[h])}else run=null;if(run&&(!best||run[1]-run[0]>best[1]-best[0]))best=run.slice()}
- return{hi:Math.max(...(day.length?day:tv)),lo:Math.min(...tv),storm:best?[best[0]*60,(best[1]+1)*60,best[2]]:null,t,p}
+ const cs=(f.c||[]).slice(9,19).filter(x=>x!=null),cnt={};cs.forEach(x=>cnt[x]=(cnt[x]||0)+1);
+ let code=cs.length?+Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||b-a)[0]:null;
+ if(best&&f.c){const sc=f.c.slice(best[0],best[1]+1).filter(x=>x!=null);if(sc.length)code=Math.max(...sc)}
+ return{hi:Math.max(...(day.length?day:tv)),lo:Math.min(...tv),storm:best?[best[0]*60,(best[1]+1)*60,best[2]]:null,t,p,code}
 }
 const mkWX=()=>{WX=DAYS.map(d=>fcDay(d[0]))};
-const fcWhen=()=>S.fc?new Date(S.fc.at).toLocaleString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit'}):'';
+const fcWhen=()=>S.fc?'updated '+new Date(S.fc.at).toLocaleString('en-GB',{timeZone:TZ,weekday:'short',hour:'2-digit',minute:'2-digit'}).replace(',',''):'';
 function noFcText(di){
  const iso=DAYS[di][0],today=orlandoNow().date;
  if(iso<today)return 'No forecast was saved for this day.';
@@ -110,17 +113,19 @@ function noFcText(di){
 let fcBusy=false,fcFail=false;
 async function fetchFC(force){
  if(fcBusy||navigator.onLine===false)return;
- if(!force&&!fcFail&&S.fc&&Date.now()-S.fc.at<3*3600e3)return;
+ const onTrip=DAYS.some(x=>x[0]===orlandoNow().date);
+ if(!force&&!fcFail&&S.fc&&Date.now()-S.fc.at<(onTrip?20*60e3:3*3600e3))return;
  fcBusy=true;
  try{
   const r=await fetch(FC_URL,{cache:'no-store'});if(!r.ok)throw new Error(r.status);
   const j=await r.json(),h=j.hourly,d={};
-  h.time.forEach((ts,k)=>{const iso=ts.slice(0,10),hr=+ts.slice(11,13);const x=d[iso]||(d[iso]={t:Array(24).fill(null),p:Array(24).fill(null)});x.t[hr]=h.temperature_2m[k];x.p[hr]=h.precipitation_probability[k]});
+  h.time.forEach((ts,k)=>{const iso=ts.slice(0,10),hr=+ts.slice(11,13);const x=d[iso]||(d[iso]={t:Array(24).fill(null),p:Array(24).fill(null),c:Array(24).fill(null)});x.t[hr]=h.temperature_2m[k];x.p[hr]=h.precipitation_probability[k];if(h.weather_code)x.c[hr]=h.weather_code[k]});
   const first=Object.keys(d).sort()[0],old=(S.fc&&S.fc.d)||{};
   // keep earlier trip days from the last download so past days still show what was forecast
   const tripDates=new Set(DAYS.map(x=>x[0]));
   for(const k in old)if(k<first&&tripDates.has(k))d[k]=old[k];
-  S.fc={at:Date.now(),d};fcFail=false;mkWX();render();
+  const c=j.current;
+  S.fc={at:Date.now(),d,cur:c?{time:c.time,t:c.temperature_2m,feels:c.apparent_temperature,code:c.weather_code,wind:c.wind_speed_10m,hum:c.relative_humidity_2m,rain:c.precipitation}:null};fcFail=false;mkWX();render();
  }catch(e){const was=fcFail;fcFail=true;if(!was)render()}
  finally{fcBusy=false}
 }
@@ -129,13 +134,26 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)fetchFC()}
 setInterval(()=>fetchFC(),5*60e3);
 setTimeout(()=>fetchFC(),0);
 
+const wxLbl=w=>w.code!=null&&!(w.storm&&w.code>=51)?WMO(w.code).toLowerCase():'';
+const WMO=c=>c==null?'':c===0?'Clear':c===1?'Mainly clear':c===2?'Partly cloudy':c===3?'Cloudy':c<=48?'Fog':c<=57?'Drizzle':c<=67?'Rain':c<=77?'Snow':c<=82?'Showers':'Thunderstorms';
+const isToday=di=>!!DAYS[di]&&DAYS[di][0]===orlandoNow().date;
+const curFresh=()=>{const c=S.fc&&S.fc.cur;if(!c)return null;const n=orlandoNow();return c.time&&c.time.slice(0,10)===n.date&&Math.abs((+c.time.slice(11,13)*60+(+c.time.slice(14,16)))-n.min)<=180?c:null};
+function nowBlock(di){
+ if(!isToday(di))return '';const c=curFresh();
+ if(!c)return '';
+ return `<div class="wxnow"><div><span class="mute">Now in Orlando</span><b>${Math.round(c.t)}°C</b><span>${WMO(c.code)}</span></div><div class="mute">Feels like ${Math.round(c.feels)}°C · wind ${Math.round(c.wind)} km/h · humidity ${Math.round(c.hum)}%${c.rain>0?' · raining now':''}<br>Updated ${c.time.slice(11,16)} Orlando time${navigator.onLine===false?' (saved)':''}</div></div>`;
+}
+const wxShort=di=>{const w=WX[di];if(!w)return 'no forecast yet';const c=isToday(di)&&curFresh();
+ return (c?'now '+Math.round(c.t)+'°C, '+WMO(c.code).toLowerCase():w.hi+'°C'+(w.code!=null&&!(w.storm&&w.code>=51)?', '+WMO(w.code).toLowerCase():''))+(w.storm?', showers '+fmt(w.storm[0])+'–'+fmt(w.storm[1]):'')};
+const restHL=(di,w)=>{if(!isToday(di))return[w.hi,w.lo];const h=Math.floor(orlandoNow().min/60),r=w.t.slice(h).filter(x=>x!=null);return r.length?[Math.max(...r),Math.min(...r)]:[w.hi,w.lo]};
+
 const rainAt=(di,m)=>{const w=WX[di];return w?w.p[Math.max(0,Math.min(23,Math.floor(m/60)))]:0};
 const tempAt=(di,m)=>{const w=WX[di];if(!w)return null;const h=Math.max(0,Math.min(23,Math.floor(m/60)));return w.t[h]!=null?w.t[h]:w.hi};
 const XPN={none:'No Express',once:'Express (once per ride)',unl:'Express Unlimited'};
 const xpOn=di=>(S.xp&&S.xp[di])||'none';
 function wt(r,di,t){const v=sim(r,di,t,ck(di));if(v.w==null)return null;return xpOn(di)!=='none'&&!NOX.has(r.id)?Math.max(5,Math.round(v.w*.25/5)*5):v.w}
 function wxPen(r,di,t){if(S.set.wx===false||!WX[di])return 0;let p=0;if(OUT.has(r.id)&&rainAt(di,t)>=40)p+=60;if(WET.has(r.id)&&tempAt(di,t)<20)p+=40;return p}
-function wxStrip(di){if(!WX[di])return `<div class="wx"><p class="mute" style="margin:0;font-size:14px">${noFcText(di)}</p></div>`;const cells=[];for(let m=420;m<1320;m+=60){const r=rainAt(di,m);cells.push(`<span class="wxc" title="${fmt(m)}: ${r}% chance of rain, ${tempAt(di,m)}°C"><b>${(m-420)%180===0?fmt(m):''}</b><i style="height:${Math.max(4,r*.6)}px;opacity:${.25+r/130}"></i><em>${r>=30?r+'%':tempAt(di,m)+'°'}</em></span>`)}const w=WX[di];return `<div class="wx"><div class="row" style="font-size:14px"><span><b>${w.hi}°C</b> / ${w.lo}°C · ${w.storm?'showers '+fmt(w.storm[0])+'–'+fmt(w.storm[1])+', '+w.storm[2]+'% chance':'mostly dry'}${w.hi<20?' · cool day, water rides not advised':''}</span><span class="mute">Open-Meteo forecast${S.fc?', '+fcWhen():''}${navigator.onLine===false?' (saved)':''}</span></div><div class="wxs">${cells.join('')}</div></div>`}
+function wxStrip(di){if(!WX[di])return `<div class="wx"><p class="mute" style="margin:0;font-size:14px">${noFcText(di)}</p></div>`;const cells=[],td=isToday(di),nm=orlandoNow().min;for(let m=420;m<1320;m+=60){const r=rainAt(di,m),past=td&&m+60<=nm;cells.push(`<span class="wxc${past?' past':''}" title="${fmt(m)}: ${r}% chance of rain, ${tempAt(di,m)}°C"><b>${(m-420)%180===0?fmt(m):''}</b><i style="height:${Math.max(4,r*.6)}px;opacity:${.25+r/130}"></i><em>${r>=30?r+'%':tempAt(di,m)+'°'}</em></span>`)}const w=WX[di];return `<div class="wx">${nowBlock(di)}<div class="row" style="font-size:14px"><span>${td?'<span class="mute">Rest of today · </span>':''}<b>${restHL(di,w)[0]}°C</b> / ${restHL(di,w)[1]}°C · ${wxLbl(w)?wxLbl(w)+' · ':''}${w.storm?'showers '+fmt(w.storm[0])+'–'+fmt(w.storm[1])+', '+w.storm[2]+'% chance':'no showers expected'}${w.hi<20?' · cool day, water rides not advised':''}</span><span class="mute">Open-Meteo forecast${S.fc?', '+fcWhen():''}${navigator.onLine===false?' (saved)':''}</span></div><div class="wxs">${cells.join('')}</div></div>`}
 function down(r,di){const o=S.obs&&S.obs[di];if(!o)return null;const x=o.rd[r.id];return x&&x.closed?[o.at,o.at+45]:null}
 function sim(r,di,m,ck,raw){
  const[o,c]=hours(r,di);
@@ -208,10 +226,10 @@ function viewToday(){
   nxh=`<div class="mute">Next up · ${fmt(nx.t)}</div><div class="nxbig">${esc(nx.title)}</div>${extra}<div class="addf"><button type="button" class="btn" data-a="tick" data-id="${nx.id}">Done</button><a class="more" style="align-self:center" href="#planner">Full plan ›</a></div>`}
  const sh=p?RIDES.filter(r=>r.park===p).map(r=>({r,w:wt(r,di,m)})).filter(x=>x.w!=null).sort((a,b)=>a.w-b.w).slice(0,4):[];
  const mx=Math.max(60,...sh.map(x=>x.w));
- const head=`<div class="hd"><div><h1>${DAYS[di][1]}</h1><p>Day ${di+1} of ${DAYS.length} · ${esc(planText(di))} · ${CNAME[cr]} crowds · ${w?w.hi+'°C'+(w.storm?', showers '+fmt(w.storm[0])+'–'+fmt(w.storm[1]):', dry'):'no forecast yet'} · waits are historic estimates</p></div><span class="addf" style="margin:0"><button class="btn ghost" type="button" data-a="replan">Re-plan from here</button><button class="btn" type="button" data-a="spend">+ Log spend</button></span></div>`;
+ const head=`<div class="hd"><div><h1>${DAYS[di][1]}</h1><p>Day ${di+1} of ${DAYS.length} · ${esc(planText(di))} · ${CNAME[cr]} crowds · ${wxShort(di)} · waits are historic estimates</p></div><span class="addf" style="margin:0"><button class="btn ghost" type="button" data-a="replan">Re-plan from here</button><button class="btn" type="button" data-a="spend">+ Log spend</button></span></div>`;
  const bad=alerts.some(a=>a[0]==='bad');
  const al=alerts.length?`<div style="margin-bottom:16px"><button type="button" class="alsum" data-a="alx" aria-expanded="${!!S.alx}" style="${bad?'border-color:var(--acc);background:var(--accbg)':''}"><span><b style="${bad?'color:var(--acc)':''}">${alerts.length} alert${alerts.length>1?'s':''}</b> · ${esc(alerts.map(a=>a[1]).join(' · '))}</span><span>${S.alx?'Hide':'Show'}</span></button>${S.alx?`<div class="alerts" style="margin:8px 0 0">${alerts.map(a=>`<div class="alert ${a[0]}"><span>${a[2]}</span></div>`).join('')}</div>`:''}</div>`:'';
- return head+al+`<div class="today2">
+ return head+al+nowBlock(di)+`<div class="today2">
   <div class="card" style="padding:20px 22px">${nxh}
    ${up.length?`<div style="margin-top:16px"><div class="mute" style="font-size:13.5px;margin-bottom:2px">Then</div>${up.map(i=>`<div class="sp"><span><b class="nw">${fmt(i.t)}</b> ${esc(i.title)}</span></div>`).join('')}</div>`:''}</div>
   <div style="display:grid;gap:16px">
@@ -303,7 +321,7 @@ function drawChart(){
 function viewCalendar(){
  return `<div class="hd"><div><h1>Calendar</h1><p>${DAYS.length} days, ${DAYS[0][1]} to ${DAYS[DAYS.length-1][1]}. Click a day to open it on Today. Crowd levels are sample estimates and scale the historic wait estimates. Weather is the live Orlando forecast, which reaches about 16 days ahead.</p></div></div>
  <div class="cal">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<span class="h">${d}</span>`).join('')}
- ${DAYS.map((d,i)=>{const sp=spent(i);return `<button type="button" class="cd ${i===S.day?'on':''}" data-a="calday" data-d="${i}"><span class="row"><b>${d[1].split(' ')[1]}</b><span class="mute">Day ${i+1}</span></span><span class="cr ${ck(i)}">${CNAME[ck(i)]}</span><span class="mute" style="font-size:13px">${WX[i]?WX[i].hi+'°C · '+(WX[i].storm?WX[i].storm[2]+'% showers':'dry'):'forecast later'}${xpOn(i)!=='none'?' · Express':''}</span><span>${ps(i).map(x=>'<span class="pdot" style="background:var(--'+x[0]+')"></span>').join('')}${esc(ps(i).map(x=>PARKS[x[0]].short).join(' + ')||(i===DAYS.length-1&&i>0?'Depart':'Rest'))}</span><span class="mute" style="font-size:13px">${items(i).length} planned${sp?' · '+usd(sp)+' spent':''}</span></button>`}).join('')}</div>`;
+ ${DAYS.map((d,i)=>{const sp=spent(i);return `<button type="button" class="cd ${i===S.day?'on':''}" data-a="calday" data-d="${i}"><span class="row"><b>${d[1].split(' ')[1]}</b><span class="mute">Day ${i+1}</span></span><span class="cr ${ck(i)}">${CNAME[ck(i)]}</span><span class="mute" style="font-size:13px">${WX[i]?WX[i].hi+'°C · '+(WX[i].storm?WX[i].storm[2]+'% showers':(WX[i].code!=null?WMO(WX[i].code).toLowerCase():'dry')):'forecast later'}${xpOn(i)!=='none'?' · Express':''}</span><span>${ps(i).map(x=>'<span class="pdot" style="background:var(--'+x[0]+')"></span>').join('')}${esc(ps(i).map(x=>PARKS[x[0]].short).join(' + ')||(i===DAYS.length-1&&i>0?'Depart':'Rest'))}</span><span class="mute" style="font-size:13px">${items(i).length} planned${sp?' · '+usd(sp)+' spent':''}</span></button>`}).join('')}</div>`;
 }
 const TRAVEL={'ioa-usf':[15,'walk via CityWalk'],'epic-ioa':[25,'resort bus via Dockside'],'epic-usf':[25,'resort bus via Dockside']};
 const travel=(a,b)=>TRAVEL[[a,b].sort().join('-')]||[0,''];

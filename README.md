@@ -40,7 +40,7 @@ It needs to be served over https so phones will install it. Pick one option:
 
 ## Updating
 
-Change the files and upload them again. Phones get the new version the next time the app opens with signal. If you change `app.css` or `app.js`, also change `CACHE` in `sw.js` to the next number (it's `fhp-v4` now) so old copies are cleared.
+Change the files and upload them again. Phones get the new version the next time the app opens with signal. If you change `app.css` or `app.js`, also change `CACHE` in `sw.js` to the next number (it's `fhp-v5` now) so old copies are cleared.
 
 ## Next steps
 

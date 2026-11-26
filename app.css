@@ -276,3 +276,8 @@ textarea{font-size:16px}
 .trd label{display:grid;gap:4px;font-size:14px;font-weight:600}
 .trd input{font:inherit;font-size:16px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--bg);color:var(--ink);min-height:42px;width:100%;box-sizing:border-box}
 @media(max-width:900px){main select{max-width:100%;min-width:0}}
+.wxnow{display:grid;gap:4px;padding:10px 12px;margin:0 0 12px;border-radius:10px;background:var(--soft)}
+.wxnow>div:first-child{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.wxnow b{font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+.wxnow .mute{font-size:13.5px}
+.wxc.past{opacity:.35}
