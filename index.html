@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Family holiday planner</title>
+<meta name="description" content="Day-by-day plan, ride waits, dining and spending for the Orlando family trip.">
+<meta name="theme-color" content="#0E5A6B" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141d21" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Holiday">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="app">
+ <nav class="side" aria-label="Main">
+  <div class="brand">Family holiday planner<small>Universal Orlando trips</small></div>
+  <div id="nav" style="display:contents"></div>
+  <div class="sidefoot"><div class="demo"><div class="row"><label for="clock">Demo time</label><b id="clockv"></b></div><div class="row" style="gap:8px"><button class="ib" type="button" data-a="play" id="playb" aria-label="Play demo clock">▶</button><input id="clock" type="range" min="420" max="1380" step="5"></div></div><div class="note">Sample plan, restaurants and spends. Waits are estimates from sample historic patterns, not live Universal data.<br><button type="button" data-a="reset">Reset demo data</button></div></div>
+ </nav>
+ <div class="col">
+  <div class="topbar">
+   <div class="dayctl"><button class="ib" type="button" data-a="dprev" aria-label="Previous day">‹</button><b id="daylbl"></b><button class="ib" type="button" data-a="dnext" aria-label="Next day">›</button></div>
+   <span style="flex:1"></span><a href="#more" class="tclock" id="tclock" aria-label="Time settings"></a><button type="button" class="ib offb" id="offb" data-a="offline"></button>
+  </div>
+  <main id="main"></main>
+ </div>
+</div>
+<nav class="tabbar" id="tabbar" aria-label="Main"><a href="#today" data-t="today"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg>Today</a><a href="#queues" data-t="queues"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>Waits</a><a href="#planner" data-t="planner"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>Plan</a><a href="#dining" data-t="dining"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10M17 21V3c-2.2 1-3.5 3.5-3.5 7v3H17"/></svg>Eat</a><a href="#more" data-t="more"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>More</a></nav>
+<div class="modal" id="rpm" role="dialog" aria-modal="true" aria-label="Re-plan from here"><div class="mbox" id="rpbox" style="width:min(680px,100%);max-height:90vh;overflow-y:auto"></div></div>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
+ <form class="mbox" id="spendf">
+  <h2 id="mt">Log a spend</h2>
+  <label>Amount (USD)<input id="sa" type="number" min="0.01" step="0.01" inputmode="decimal" required placeholder="0.00"></label>
+  <label>Category<select id="sc"></select></label>
+  <label>Where<input id="sw" type="text" maxlength="60" placeholder="e.g. Three Broomsticks"></label>
+  <div class="row"><button type="button" class="btn ghost" data-a="close">Cancel</button><button class="btn acc" type="submit">Add spend</button></div>
+ </form>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
