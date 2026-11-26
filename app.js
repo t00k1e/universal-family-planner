@@ -29,7 +29,7 @@ const SAMPLE=[
  ['2027-01-08','Fri 8 Jan',[],'moderate','Departure day']];
 let DAYS=SAMPLE;
 const BUDGET=[['Breakfast',75],['Lunch',125],['Dinner',200],['Snacks and drinks',75],['Treats and contingency',25]];
-const NAV=[['g','On the day'],['today','Today'],['queues','Ride planner'],['planner','Plan'],['g','Before the trip'],['calendar','Calendar'],['mustdos','Must-dos'],['g','Money'],['dining','Eat'],['budget','Spend'],['g',''],['settings','Settings']];
+const NAV=[['g','On the day'],['today','Today'],['queues','Ride planner'],['g','Before the trip'],['calendar','Calendar'],['g','Money'],['dining','Eat'],['budget','Spend'],['g',''],['settings','Settings']];
 const hs=s=>{let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};
 const rng=seed=>()=>{seed=(seed+0x6D2B79F5)|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
 const hours=(r,di)=>[PARKS[r.park].open-(r.ee&&S.set.epa!==false?60:0),PARKS[r.park].close+(late(di)?60:0)];
@@ -243,7 +243,7 @@ function viewToday(){
  </div>`;
 }
 
-function viewQueues(){
+function viewQueuesOld(){
  const di=S.day,m=S.clock,cr=ck(di),ob=S.obs[di];
  const p=S.qpark||parkAt(di,m)||ps(di)[0]?.[0]||'ioa';
  const must=S.must[di]||[];
@@ -549,8 +549,8 @@ function bestOrder(rs,di,start,end,fx){
  return evalOrder(order,di,start,end,fx);
 }
 function segOf(di,p){const w=window4(di,p);if(!w)return null;const anyEE=RIDES.some(r=>r.park===p&&r.ee);return[Math.max(w[0],PARKS[p].open-(anyEE?60:0)),Math.min(w[1],PARKS[p].close+(late(di)?60:0))]}
-function planDay(){
- let picked=false;if(!(S.must[S.day]||[]).length&&ps(S.day).length){const P=ps(S.day);S.must[S.day]=P.flatMap(([p])=>RIDES.filter(r=>r.park===p).sort((a,b)=>b.pop-a.pop).slice(0,P.length>1?2:4).map(r=>r.id));picked=true}
+function planDay(btn){
+ let picked=false;if(btn&&!(S.must[S.day]||[]).length&&ps(S.day).length){const P=ps(S.day);S.must[S.day]=P.flatMap(([p])=>RIDES.filter(r=>r.park===p).sort((a,b)=>b.pop-a.pop).slice(0,P.length>1?2:4).map(r=>r.id));picked=true}
  const di=S.day,must=(S.must[di]||[]).map(id=>RID[id]).filter(r=>r&&!items(di).some(i=>i.done&&i.ride===r.id));
  S.it[di]=(S.it[di]||[]).filter(i=>i.done||!i.ride||!(i.auto||must.some(r=>r.id===i.ride)));
  const started=items(di).some(i=>i.done);const fx=fixedOf(di);let tot=0,n=0;
@@ -638,8 +638,8 @@ function viewMore(){
  return `<div class="hd"><div><h1>More</h1><p>Trip set-up, money and app settings.</p></div></div>
  <div class="mlinks">
   <a href="#calendar" class="card mlink"><b>Calendar</b><span>Park days, crowds and weather</span></a>
-  <a href="#mustdos" class="card mlink"><b>Must-dos</b><span>Pick the rides you can't miss</span></a>
-  <a href="#budget" class="card mlink"><b>Spend</b><span>Food and whole-trip budget</span></a>
+  <a href="#planner" class="card mlink"><b>Edit a day</b><span>Add meals, hops and change times</span></a>
+  <a href="#dining" class="card mlink"><b>Eat</b><span>Restaurants, map and ratings</span></a>
   <a href="#settings" class="card mlink"><b>Settings</b><span>Trip, Express, alerts, currency</span></a>
  </div>
  <div class="grid2" style="margin-top:14px">
@@ -677,7 +677,70 @@ setInterval(()=>{if(S.live&&!document.hidden&&!document.querySelector('.modal.op
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.live&&syncLive())render()});
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
 
-const route=()=>{let h=location.hash.slice(1);if(h==='itinerary')h='planner';return h==='more'||(h!=='g'&&NAV.some(n=>n[0]===h))?h:'today'};
+// ---- Ride planner: pick rides, the day builds itself ----
+const RTYPE={hagrid:'coaster',velo:'coaster',hulk:'coaster',rockit:'coaster',mummy:'coaster',stardust:'coaster',minecart:'coaster',doom:'thrill',
+ jpra:'water',ripsaw:'water',barges:'water',
+ cat:'kids',hippo:'kids',yoshi:'kids',carousel:'kids',rally:'kids',hiccup:'family',villain:'family',minion:'family',
+ fj:'dark',spidey:'dark',kong:'dark',gringotts:'dark',trans:'dark',mib:'dark',simpsons:'dark',ff:'dark',hwexp:'dark',ministry:'dark',mario:'dark',monsters:'dark',werewolf:'thrill'};
+const TNAME={coaster:'Coaster',thrill:'Thrill',water:'Water ride',kids:'Little ones',family:'Family',dark:'Dark ride'};
+const TICON={
+ coaster:'<path d="M2 18c3 0 4-10 8-10s3 7 6 7 3-5 6-5"/><path d="M5 18v3M10 9v12M16 15v6M21 11v10"/>',
+ thrill:'<path d="M12 2v16"/><path d="M8 6h8M8 10h8"/><path d="M6 22h12"/><circle cx="12" cy="14" r="2"/>',
+ water:'<path d="M2 15c2 0 2 2 4 2s2-2 4-2 2 2 4 2 2-2 4-2 2 2 4 2"/><path d="M2 20c2 0 2 2 4 2s2-2 4-2 2 2 4 2 2-2 4-2 2 2 4 2"/><path d="M6 12l6-8 6 8"/>',
+ kids:'<circle cx="12" cy="6" r="3"/><path d="M5 22l2-8h10l2 8"/><path d="M12 9v5"/>',
+ family:'<circle cx="8" cy="6" r="2.5"/><circle cx="16" cy="7" r="2"/><path d="M4 20c0-4 2-7 4-7s4 3 4 7M12 20c0-3 2-6 4-6s4 3 4 6"/>',
+ dark:'<path d="M3 20h18"/><path d="M5 20V9l7-5 7 5v11"/><path d="M10 20v-5h4v5"/><circle cx="12" cy="10" r="1.5"/>'};
+const ricon=(t,sz)=>`<svg viewBox="0 0 24 24" width="${sz||26}" height="${sz||26}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${TICON[t]||TICON.dark}</svg>`;
+const IICON={meal:'<path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10M17 21V3c-2.2 1-3.5 3.5-3.5 7v3H17"/>',hop:'<path d="M4 12h14M13 6l6 6-6 6"/>',activity:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>'};
+function dayBest(r,di){const w=window4(di,r.park);if(!w)return null;const cr=ck(di);let b=null;for(let m=w[0];m<w[1];m+=15){const v=sim(r,di,m,cr);if(v.w!=null&&(!b||v.w<b.w))b={m,w:v.w}}return b}
+function spark(r,di){const w=window4(di,r.park)||hours(r,di),cr=ck(di),pts=[];for(let m=w[0];m<w[1];m+=60)pts.push(sim(r,di,m,cr).w);const mx=Math.max(30,...pts.map(x=>x||0));
+ return `<span class="spark" aria-hidden="true">${pts.map(x=>`<i style="height:${x==null?2:Math.max(8,x/mx*100)}%"></i>`).join('')}</span>`}
+function viewQueues(){
+ const di=S.day,m=S.clock,cr=ck(di),P=ps(di),pd=P.map(x=>x[0]);
+ const p=S.qpark&&PARKS[S.qpark]?S.qpark:(parkAt(di,m)||pd[0]||'ioa');
+ const must=S.must[di]||[];
+ const q=S.q.trim().toLowerCase();
+ let list=RIDES.filter(r=>r.park===p).sort((a,b)=>b.pop-a.pop);
+ if(q)list=list.filter(r=>(r.name+' '+r.area+' '+SHORT[r.id]+' '+TNAME[RTYPE[r.id]]).toLowerCase().includes(q));
+ if(!RID[S.sel]||RID[S.sel].park!==p)S.sel=list[0]?list[0].id:RIDES.find(r=>r.park===p).id;
+ const its=items(di),rides=its.filter(i=>i.ride),left=rides.filter(i=>!i.done),tot=left.reduce((s,i)=>s+(wt(RID[i.ride],di,i.t)??0),0);
+ const hm=n=>n>=60?Math.floor(n/60)+' h '+(n%60?n%60+' min':''):n+' min';
+ const inDay=pd.includes(p);
+ const cards=list.map(r=>{const t=RTYPE[r.id]||'dark',on=must.includes(r.id),b=inDay?dayBest(r,di):null,it=its.find(i=>i.ride===r.id);
+  return `<div class="rcard${on?' on':''}">
+   <button type="button" class="rart" style="--c:var(--${r.park})" data-a="rdet" data-id="${r.id}" aria-label="Wait pattern for ${esc(SHORT[r.id])}">${ricon(t,34)}<span>${TNAME[t]}</span></button>
+   <div class="rbody"><b>${esc(SHORT[r.id])}</b><span class="mute">${esc(r.area)}</span>
+    ${inDay?(b?`<span class="best">Best around <b>${fmt(b.m)}</b> · ~${b.w} min</span>`:'<span class="mute">Not open while you are here</span>'):`<span class="mute">Not in today's parks</span>`}
+    ${inDay?spark(r,di):''}
+    ${it?`<span class="inplan">In your day at ${fmt(it.t)}</span>`:''}</div>
+   <button type="button" class="heart" data-a="mtog" data-id="${r.id}" aria-pressed="${on}" aria-label="${on?'Remove':'Add'} ${esc(SHORT[r.id])}">${on?'♥':'♡'}</button>
+  </div>`}).join('')||'<div class="empty">No rides match.</div>';
+ const r=RID[S.sel];
+ const tl=its.length?its.map(i=>{const R=i.ride&&RID[i.ride],w=R?wt(R,di,i.t):null,t=R?(RTYPE[R.id]||'dark'):i.type;
+  return `<div class="tli${i.done?' done':''}"><span class="tlt">${fmt(i.t)}</span><span class="tld" style="--c:var(--${R?R.park:'hotel'})">${R?ricon(t,18):`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IICON[i.type]||IICON.activity}</svg>`}</span><span class="tln"><b>${esc(i.title)}</b>${R?`<span class="mute">${esc(R.area)} · ~${w??'?'} min wait (est.)</span>`:''}</span><button type="button" class="ck" data-a="tick" data-id="${i.id}" aria-pressed="${!!i.done}" aria-label="Done">${i.done?'✓':''}</button></div>`}).join(''):`<div class="empty">Tap ♡ on the rides you want. Your day builds itself here, in the order with the least queuing.</div>`;
+ return `<div class="hd"><div><h1>Ride planner</h1><p>${DAYS[di][1]} · ${esc(planText(di))} · ${CNAME[cr]} crowds · waits are historic estimates</p></div></div>
+ <div class="seg rseg" role="group" aria-label="Park">${Object.entries(PARKS).map(([k,x])=>`<button type="button" class="${k===p?'on':''}" data-a="qpark" data-p="${k}"><span class="pdot" style="background:var(--${k})"></span>${x.short}${pd.includes(k)?'':' <small>not today</small>'}</button>`).join('')}</div>
+ <div class="rgrid2">
+  <section><h2 class="sh">1 · Pick your rides <small>${must.length} picked for this day</small></h2>
+   <input id="q" type="search" placeholder="Search rides, areas or types" value="${esc(S.q)}" aria-label="Search rides" style="width:100%;margin:6px 0 10px">
+   <div class="rlist">${cards}</div></section>
+  <section id="yday"><h2 class="sh">2 · Your day <small>${left.length} rides to go · about ${hm(tot)} queuing (est.)</small></h2>
+   <div class="card tl">${tl}
+    <div class="addf"><button type="button" class="btn ghost" data-a="replan">Re-plan from here</button><a class="more" style="align-self:center" href="#planner">Add meals or change times ›</a></div>
+    ${S.flash?`<p class="mute" style="font-size:13.5px;margin:8px 0 0">${esc(S.flash)}</p>`:''}</div>
+   <div class="card" id="wpat" style="margin-top:14px"><h2>Typical waits: ${esc(SHORT[r.id])} <small>${PARKS[r.park].short}</small></h2>
+    <div class="fig"><svg id="ch" role="img" aria-label="Typical wait across the day"></svg></div>
+    <div class="row" style="flex-wrap:wrap;gap:8px"><span class="mute" style="font-size:13px">For ${cr==='extreme'?'an':'a'} ${CNAME[cr].toLowerCase()} day. Tap a ride's picture to see it here.</span><select id="crowd" aria-label="Crowd level">${Object.keys(CROWD).map(k=>`<option value="${k}">${CNAME[k]} crowds</option>`).join('')}</select></div></div>
+  </section>
+ </div>
+ ${must.length?`<div class="pickbar"><span><b>${must.length} picked</b> · ${left.length} to go · ~${hm(tot)} queuing</span><button type="button" class="btn" data-a="seeday">My day</button></div>`:''}`;
+}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a;
+ if(a==='rdet'){S.sel=t.dataset.id;render();const w=$('#wpat');if(w)w.scrollIntoView({behavior:'smooth',block:'center'})}
+ if(a==='seeday'){const y=$('#yday');if(y)y.scrollIntoView({behavior:'smooth',block:'start'})}
+});
+
+const route=()=>{let h=location.hash.slice(1);if(h==='itinerary')h='planner';return ['more','planner','mustdos'].includes(h)||(h!=='g'&&NAV.some(n=>n[0]===h))?h:'today'};
 let rendered=null;
 function render(){
  const a=document.activeElement,aid=a&&a.id&&$('#main').contains(a)?a.id:null,sel=aid&&a.selectionStart!=null?[a.selectionStart,a.selectionEnd]:null;
@@ -686,13 +749,13 @@ function render(){
  $('#daylbl').innerHTML=`<span class="dn">Day ${S.day+1} · </span>${DAYS[S.day][1]}`;
  $('#clock').value=S.clock;$('#clockv').textContent=fmt(S.clock);
  $('#tclock').innerHTML=fmt(S.clock)+(liveState()==='on'?'':'<i>DEMO</i>');
- const tab=['calendar','mustdos','budget','settings'].includes(v)?'more':v;document.querySelectorAll('#tabbar a').forEach(x=>{const on=x.dataset.t===tab;x.classList.toggle('on',on);on?x.setAttribute('aria-current','page'):x.removeAttribute('aria-current')});
+ const tab=['calendar','settings'].includes(v)?'more':['planner','mustdos'].includes(v)?'queues':v;document.querySelectorAll('#tabbar a').forEach(x=>{const on=x.dataset.t===tab;x.classList.toggle('on',on);on?x.setAttribute('aria-current','page'):x.removeAttribute('aria-current')});
  if(rendered!==v){rendered=v;scrollTo(0,0)}
  if(ro){ro.disconnect();ro=null}
  const qn=Object.values(S.ex).flat().filter(e=>e.q).length;
  $('#offb').innerHTML=S.offline?`Offline${qn?'<span class="ol"> · '+qn+' to sync</span>':''}`:'●<span class="ol"> Saved offline</span>';$('#offb').setAttribute('aria-label',S.offline?'Offline'+(qn?', '+qn+' to sync':''):'Saved offline');$('#offb').classList.toggle('off',!!S.offline);$('#offb').title=S.offline?'Tap to go back online and sync':'Today and tomorrow are saved on this device. Tap to try offline mode';
  $('#main').innerHTML=(S.offline?`<div class="alert" style="margin-bottom:14px"><span><b>You're offline.</b> Showing the plan saved on this device. ${qn?qn+' spend'+(qn>1?'s':'')+' will sync when you’re back online.':'Spends you log now will sync later.'} Maps, live ratings and family sync need signal.</span></div>`:'')+(v==='today'?viewToday():v==='queues'?viewQueues():v==='calendar'?viewCalendar():v==='planner'?viewPlanner():v==='mustdos'?viewMustdos():v==='dining'?viewDining():v==='budget'?viewBudget():v==='more'?viewMore():viewSettings());
- if(v==='queues'){$('#sort').value=S.sort;$('#crowd').value=ck(S.day);const s=$('#ch');if(s){ro=new ResizeObserver(drawChart);ro.observe(s)}}
+ if(v==='queues'){const so=$('#sort');if(so)so.value=S.sort;const cw=$('#crowd');if(cw)cw.value=ck(S.day);const s=$('#ch');if(s){ro=new ResizeObserver(drawChart);ro.observe(s)}}
  if(v==='planner'){const s=$('#pch');if(s){ro=new ResizeObserver(drawPlan);ro.observe(s)}}
  if(aid){const el=document.getElementById(aid);if(el){el.focus();if(sel&&el.setSelectionRange)try{el.setSelectionRange(sel[0],sel[1])}catch(e){}}}
  save();
@@ -723,7 +786,7 @@ document.addEventListener('click',e=>{
  if(a==='rpclose')closeRP();
  if(a==='clearobs'){delete S.obs[di];render()}
  if(a==='delobs'){S.olog=(S.olog||[]).filter(o=>o.id!==id);render()}
- if(a==='planday')planDay();
+ if(a==='planday')planDay(true);
  if(a==='alx'){S.alx=!S.alx;render()}
  if(a==='offline'){S.offline=!S.offline;if(!S.offline)syncQ();render()}
  if(a==='reset'){setPlay(false);S=seed();fill();tripPending=null;tripMsg='';applyTrip();syncLive();render()}
