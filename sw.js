@@ -1,5 +1,5 @@
 // Offline support: keeps the app shell on the phone so the plan opens without signal.
-const CACHE = 'fhp-v7';
+const CACHE = 'fhp-v8';
 const SHELL = ['./', 'index.html', 'app.css', 'app.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', e => {

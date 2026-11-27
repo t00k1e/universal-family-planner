@@ -319,7 +319,7 @@ function drawChart(){
 }
 
 function viewCalendar(){
- return `<div class="hd"><div><h1>Calendar</h1><p>${DAYS.length} days, ${DAYS[0][1]} to ${DAYS[DAYS.length-1][1]}. Click a day to open it on Today. Crowd levels are sample estimates and scale the historic wait estimates. Weather is the live Orlando forecast, which reaches about 16 days ahead.</p></div></div>
+ return `<div class="hd"><div><h1>Calendar</h1><p>${DAYS.length} days, ${DAYS[0][1]} to ${DAYS[DAYS.length-1][1]}. Tap a day to open it on Today. Crowd levels are sample estimates and scale the historic wait estimates. Weather is the live Orlando forecast, which reaches about 16 days ahead.</p></div></div>
  <div class="cal">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<span class="h">${d}</span>`).join('')}
  ${DAYS.map((d,i)=>{const sp=spent(i);return `<button type="button" class="cd ${i===S.day?'on':''}" data-a="calday" data-d="${i}"><span class="row"><b>${d[1].split(' ')[1]}</b><span class="mute">Day ${i+1}</span></span><span class="cr ${ck(i)}">${CNAME[ck(i)]}</span><span class="mute" style="font-size:13px">${WX[i]?WX[i].hi+'°C · '+(WX[i].storm?WX[i].storm[2]+'% showers':(WX[i].code!=null?WMO(WX[i].code).toLowerCase():'dry')):'forecast later'}${xpOn(i)!=='none'?' · Express':''}</span><span>${ps(i).map(x=>'<span class="pdot" style="background:var(--'+x[0]+')"></span>').join('')}${esc(ps(i).map(x=>PARKS[x[0]].short).join(' + ')||(i===DAYS.length-1&&i>0?'Depart':'Rest'))}</span><span class="mute" style="font-size:13px">${items(i).length} planned${sp?' · '+usd(sp)+' spent':''}</span></button>`}).join('')}</div>`;
 }
@@ -484,11 +484,11 @@ function viewBudget(){
  <div class="card" style="margin-bottom:16px"><h2>Whole trip <small>food, souvenirs and extras · £ at ${S.set.rate} per $1 (sample rate)</small></h2>${(()=>{const all=Object.values(S.ex).flat();const sum=c=>all.filter(e=>e.cat===c).reduce((s,e)=>s+e.amt,0);const food=all.filter(e=>e.cat in S.alloc).reduce((s,e)=>s+e.amt,0);const rows=[['Food',food,D*DAYS.length,null]].concat(Object.entries(S.extra).map(([c,b])=>[c,sum(c),b,c]));const tS=rows.reduce((s,r)=>s+r[1],0),tB=rows.reduce((s,r)=>s+r[2],0);const g=n=>'£'+Math.round(n*S.set.rate).toLocaleString('en-GB');
  return `<div class="scroll"><table class="trip"><thead><tr><th>Category</th><th class="n">Spent $</th><th class="n">Spent £</th><th class="n">Budget $</th><th class="n">Budget £</th><th class="n">Left $</th><th style="width:28%"></th></tr></thead><tbody>${rows.map(([c,sp,b,k])=>`<tr style="cursor:default"><td><b>${esc(c)}</b>${c==='Extras'?'<div class="mute" style="font-size:12.5px">lockers, photos, taxis, parking</div>':''}</td><td class="n">${usd(sp)}</td><td class="n mute">${g(sp)}</td><td class="n">${k?`<input class="amt" type="number" min="0" step="50" value="${b}" data-f="xb" data-c="${esc(k)}" aria-label="${esc(c)} trip budget">`:usd(b)}</td><td class="n mute">${g(b)}</td><td class="n ${sp>b?'up':''}">${usd(b-sp)}</td><td><div class="meter"><i class="${sp>b?'over':''}" style="width:${pct(sp,b)}%"></i></div></td></tr>`).join('')}<tr style="cursor:default"><td><b>Total</b></td><td class="n"><b>${usd(tS)}</b></td><td class="n"><b>${g(tS)}</b></td><td class="n">${usd(tB)}</td><td class="n mute">${g(tB)}</td><td class="n"><b>${usd(tB-tS)}</b></td><td></td></tr></tbody></table></div>`})()}
   <p class="mute" style="font-size:13px;margin:8px 0 0">Log souvenirs and extras with + Log spend; they count here but not against the $${D} daily food allowance. Card fees and the real exchange rate will differ.</p></div>
- <div class="card"><h2>Spend by day <small>line = ${usd(D)} allowance · click a day</small></h2>
+ <div class="card"><h2>Spend by day <small>line = ${usd(D)} allowance · tap a day</small></h2>
   <div class="dbars">${tots.map((v,i)=>`<button type="button" class="db ${i===di?'on':''}" data-a="bday" data-d="${i}" aria-label="${DAYS[i][1]}: ${usd(v)}"><span class="dv nw">${v?usd(v):''}</span><span class="dcol"><i class="${v>D?'over':''} ${i>di?'fut':''}" style="height:${v/mx*100}%"></i><span class="lim" style="bottom:${D/mx*100}%"></span></span><span class="dl">${DAYS[i][1].split(' ')[1]}</span></button>`).join('')}</div></div>
  <div class="grid2" style="margin-top:16px">
   <div class="card"><h2>${DAYS[di][1]} spends <small>${usd(spent(di))} of ${usd(D)}</small></h2>
-   ${(S.ex[di]||[]).length?`<div class="scroll"><table><thead><tr><th>Time</th><th>Where</th><th>Category</th><th class="n">Amount</th><th></th></tr></thead><tbody>${spends(di).map(e=>`<tr style="cursor:default"><td class="nw">${fmt(e.t)}</td><td>${esc(e.where||'·')}</td><td><select data-f="exc" data-id="${e.id}" aria-label="Category">${allCats().map(c=>`<option ${c===e.cat?'selected':''}>${esc(c)}</option>`).join('')}</select></td><td class="n"><input class="amt" type="number" min="0" step="0.01" value="${e.amt}" data-f="exa" data-id="${e.id}" aria-label="Amount"></td><td><button type="button" class="x" data-a="delx" data-id="${e.id}" aria-label="Delete">✕</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No spends logged for this day.</div>'}</div>
+   ${(S.ex[di]||[]).length?`<div class="scroll"><table class="spt"><thead><tr><th>Time</th><th>Where</th><th>Category</th><th class="n">Amount</th><th></th></tr></thead><tbody>${spends(di).map(e=>`<tr style="cursor:default"><td class="nw">${fmt(e.t)}</td><td>${esc(e.where||'·')}</td><td><select data-f="exc" data-id="${e.id}" aria-label="Category">${allCats().map(c=>`<option ${c===e.cat?'selected':''}>${esc(c)}</option>`).join('')}</select></td><td class="n"><input class="amt" type="number" min="0" step="0.01" value="${e.amt}" data-f="exa" data-id="${e.id}" aria-label="Amount"></td><td><button type="button" class="x" data-a="delx" data-id="${e.id}" aria-label="Delete">✕</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No spends logged for this day.</div>'}</div>
   <div class="card"><h2>Daily split <small class="${asum!==D?'up':''}">${usd(asum)} of ${usd(D)} allocated</small></h2>
    ${Object.entries(S.alloc).map(([c,a])=>{const used=(S.ex[di]||[]).filter(e=>e.cat===c).reduce((s,e)=>s+e.amt,0);let ttot=0;for(let i=0;i<=di;i++)ttot+=(S.ex[i]||[]).filter(e=>e.cat===c).reduce((s,e)=>s+e.amt,0);return `<div class="alr"><span>${esc(c)}<br><span class="mute" style="font-size:12.5px">today ${usd(used)} · trip ${usd(ttot)} of ${usd(a*(di+1))}</span></span><input class="amt" type="number" min="0" step="5" value="${a}" data-f="al" data-c="${esc(c)}" aria-label="${esc(c)} daily allocation"></div>`}).join('')}
    <div class="alr" style="border-top:2px solid var(--ink)"><b>Daily allowance</b><input class="amt" type="number" min="50" step="25" value="${D}" data-f="daily" aria-label="Daily allowance"></div>
@@ -497,7 +497,7 @@ function viewBudget(){
 }
 function viewSettings(){
  const st=S.set;
- return `<div class="hd"><div><h1>Settings</h1><p>Trip details, queue data, alerts and currency. Changes apply across the prototype.</p></div></div>
+ return `<div class="hd"><div><h1>Settings</h1><p>Trip details, queue data, alerts and currency. Changes apply across the app.</p></div></div>
  <div class="grid2">
   <div class="card"><h2>Trip</h2>
    ${tripCard()}
@@ -510,7 +510,7 @@ function viewSettings(){
    <div class="sp"><span>Profile version</span><span>2026.11-sample · 32 rides · 15-minute slots</span></div>
    <div class="sp"><span>Crowd scaling</span><span>Quiet ×0.62 · Moderate ×1 · Busy ×1.38 · Extreme ×1.78</span></div>
    <div class="sp"><span>Live waits</span><span>Use the official Universal Orlando app, then Re-plan from here</span></div>
-   <div class="sp"><span>Your readings</span><span>${(()=>{const T=accuracy(S.olog||[]);return T.n?T.n+' typed'+(T.m!=null?' · ran ×'+T.m.toFixed(2)+' of estimates':''):'None typed yet'})()} · <a href="#queues">see Waits</a></span></div>
+   <div class="sp"><span>Your readings</span><span>${(()=>{const T=accuracy(S.olog||[]);return T.n?T.n+' typed'+(T.m!=null?' · ran ×'+T.m.toFixed(2)+' of estimates':''):'None typed yet'})()} · <a href="#queues">see Ride planner</a></span></div>
    <h2 style="margin-top:18px">Park extras</h2>
    <div class="alr"><label for="epa">Early Park Admission (hotel guest benefit; check which park each day)</label><input id="epa" type="checkbox" data-f="epa" ${st.epa!==false?'checked':''} style="width:22px;height:22px;flex:none"></div>
    <div class="alr"><label for="wx">Weather-aware plans: keep outdoor rides out of likely showers, water rides off cool days</label><input id="wx" type="checkbox" data-f="wx" ${st.wx!==false?'checked':''} style="width:22px;height:22px;flex:none"></div>
@@ -525,7 +525,7 @@ function viewSettings(){
    <div class="alr"><label for="cur">Show pounds next to dollars</label><input id="cur" type="checkbox" data-f="cur" ${st.cur?'checked':''} style="width:22px;height:22px"></div>
    <div class="alr"><label for="rate">Rate used, £ per $1 (sample)</label><input id="rate" class="amt" type="number" min="0.1" max="2" step="0.01" value="${st.rate}" data-f="rate"></div></div>
   <div class="card"><h2>Each day <small>crowd level and Express Pass</small></h2>
-   ${DAYS.map((d,i)=>`<div class="alr"><span>${d[1]} <span class="mute">· ${esc(ps(i).map(x=>PARKS[x[0]].short).join(' + ')||'no park')}</span></span><select data-f="cd" data-d="${i}" aria-label="Crowd for ${d[1]}">${Object.keys(CROWD).map(k=>`<option value="${k}" ${ck(i)===k?'selected':''}>${CNAME[k]} ×${CROWD[k]}</option>`).join('')}</select><select data-f="xpd" data-d="${i}" aria-label="Express Pass for ${d[1]}">${Object.entries(XPN).map(([k,l])=>`<option value="${k}" ${xpOn(i)===k?'selected':''}>${l}</option>`).join('')}</select></div>`).join('')}
+   ${DAYS.map((d,i)=>`<div class="alr dayr"><span>${d[1]} <span class="mute">· ${esc(ps(i).map(x=>PARKS[x[0]].short).join(' + ')||'no park')}</span></span><select data-f="cd" data-d="${i}" aria-label="Crowd for ${d[1]}">${Object.keys(CROWD).map(k=>`<option value="${k}" ${ck(i)===k?'selected':''}>${CNAME[k]} ×${CROWD[k]}</option>`).join('')}</select><select data-f="xpd" data-d="${i}" aria-label="Express Pass for ${d[1]}">${Object.entries(XPN).map(([k,l])=>`<option value="${k}" ${xpOn(i)===k?'selected':''}>${l}</option>`).join('')}</select></div>`).join('')}
    <div class="addf"><button type="button" class="btn ghost" data-a="reset">Reset all demo data</button></div></div>
  </div>`;
 }
@@ -633,8 +633,8 @@ function viewMore(){
  const live=S.live?(ls==='on'?`Following Orlando time. ${S.follow===false?'You picked a different day.':'Today is Day '+(S.day+1)+'.'}`:ls==='before'?`Real Orlando time starts on ${DAYS[0][1]}, ${dt} day${dt===1?'':'s'} away. Until then the app uses the demo clock below.`:'The trip has finished, so the app uses the demo clock.'):'The app uses the demo clock, so you can try any time of day.';
  const inst=isStandalone()?`<p class="mute" style="margin:0">Installed. You're using the app from your home screen.</p>`:
   `${deferredInstall?`<div class="addf" style="margin-top:0"><button type="button" class="btn" data-a="install">Install the app</button></div>`:''}
-   <div class="sp"><span><b>iPhone</b></span><span>Open the link in Safari, tap Share, then Add to Home Screen.</span></div>
-   <div class="sp"><span><b>Android</b></span><span>Open the link in Chrome, tap the ⋮ menu, then Install app.</span></div>`;
+   <div class="sp spl"><span><b>iPhone</b></span><span>Open the link in Safari, tap Share, then Add to Home Screen.</span></div>
+   <div class="sp spl"><span><b>Android</b></span><span>Open the link in Chrome, tap the ⋮ menu, then Install app.</span></div>`;
  return `<div class="hd"><div><h1>More</h1><p>Trip set-up, money and app settings.</p></div></div>
  <div class="mlinks">
   <a href="#calendar" class="card mlink"><b>Calendar</b><span>Park days, crowds and weather</span></a>
@@ -753,7 +753,7 @@ function render(){
  if(rendered!==v){rendered=v;scrollTo(0,0)}
  if(ro){ro.disconnect();ro=null}
  const qn=Object.values(S.ex).flat().filter(e=>e.q).length;
- $('#offb').innerHTML=S.offline?`Offline${qn?'<span class="ol"> · '+qn+' to sync</span>':''}`:'●<span class="ol"> Saved offline</span>';$('#offb').setAttribute('aria-label',S.offline?'Offline'+(qn?', '+qn+' to sync':''):'Saved offline');$('#offb').classList.toggle('off',!!S.offline);$('#offb').title=S.offline?'Tap to go back online and sync':'Today and tomorrow are saved on this device. Tap to try offline mode';
+ $('#offb').innerHTML=S.offline?`Offline${qn?'<span class="ol"> · '+qn+' to sync</span>':''}`:'✓<span class="ol"> Saved offline</span>';$('#offb').setAttribute('aria-label',S.offline?'Offline'+(qn?', '+qn+' to sync':''):'Saved offline');$('#offb').classList.toggle('off',!!S.offline);$('#offb').title=S.offline?'Tap to go back online and sync':'Today and tomorrow are saved on this device. Tap to try offline mode';
  $('#main').innerHTML=(S.offline?`<div class="alert" style="margin-bottom:14px"><span><b>You're offline.</b> Showing the plan saved on this device. ${qn?qn+' spend'+(qn>1?'s':'')+' will sync when you’re back online.':'Spends you log now will sync later.'} Maps, live ratings and family sync need signal.</span></div>`:'')+(v==='today'?viewToday():v==='queues'?viewQueues():v==='calendar'?viewCalendar():v==='planner'?viewPlanner():v==='mustdos'?viewMustdos():v==='dining'?viewDining():v==='budget'?viewBudget():v==='more'?viewMore():viewSettings());
  if(v==='queues'){const so=$('#sort');if(so)so.value=S.sort;const cw=$('#crowd');if(cw)cw.value=ck(S.day);const s=$('#ch');if(s){ro=new ResizeObserver(drawChart);ro.observe(s)}}
  if(v==='planner'){const s=$('#pch');if(s){ro=new ResizeObserver(drawPlan);ro.observe(s)}}

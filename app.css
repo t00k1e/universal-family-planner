@@ -312,3 +312,66 @@ textarea{font-size:16px}
  .pickbar{display:flex;position:fixed;left:8px;right:8px;bottom:calc(var(--tabh) + 8px + env(safe-area-inset-bottom));z-index:3;align-items:center;justify-content:space-between;gap:10px;background:var(--ink);color:var(--bg);border-radius:14px;padding:8px 8px 8px 14px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
  .pickbar .btn{background:var(--ambl);color:#1B2B34;min-height:38px}
  main{padding-bottom:calc(var(--tabh) + 84px + env(safe-area-inset-bottom))}}
+
+/* ---------- UI polish (2026-11-27) ---------- */
+.card{box-shadow:0 1px 2px rgba(16,40,48,.04),0 2px 10px rgba(16,40,48,.04)}
+.btn,.ib,.seg button,.x{transition:background-color .15s,border-color .15s,transform .08s}
+.btn:active,.ib:active,.seg button:active,.x:active{transform:scale(.97)}
+.seg{border-color:var(--line)}
+.seg button{border-left-color:var(--line)}
+.seg button.on{background:var(--sea2);color:var(--bg)}
+span:has(>.nxw){flex:none;padding-left:8px}
+/* Settings: on/off rows as switches, label left, switch right */
+.alr:has(>input[type=checkbox]){flex-wrap:nowrap}
+.alr:has(>input[type=checkbox])>label{flex:1}
+.alr>input[type=checkbox],.dm input[type=checkbox]{appearance:none;-webkit-appearance:none;width:46px!important;height:28px!important;flex:none;border-radius:14px;background:var(--blk);border:1px solid var(--line);position:relative;cursor:pointer;margin:0;transition:background-color .15s}
+.alr>input[type=checkbox]::after,.dm input[type=checkbox]::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}
+.alr>input[type=checkbox]:checked,.dm input[type=checkbox]:checked{background:var(--sea2);border-color:var(--sea2)}
+.alr>input[type=checkbox]:checked::after,.dm input[type=checkbox]:checked::after{transform:translateX(18px)}
+/* Label + text rows (install steps) */
+.spl{justify-content:flex-start;gap:12px}
+.spl>span:first-child{flex:none;min-width:4.6em}
+.spl>span:last-child{flex:1}
+.dayr{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.dayr>span{grid-column:1/-1;font-weight:600}
+.dayr>select{width:100%;max-width:none}
+@media(max-width:900px){
+ .topbar{background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(14px);backdrop-filter:saturate(1.6) blur(14px)}
+ .tabbar{background:color-mix(in srgb,var(--bg) 90%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(14px);backdrop-filter:saturate(1.6) blur(14px)}
+ .tabbar svg{padding:3px 16px;border-radius:15px;box-sizing:content-box;margin:-3px 0 0}
+ .tabbar a.on svg{background:color-mix(in srgb,var(--sea2) 14%,transparent)}
+ .offb{min-width:36px;font-size:15px}
+ .btn{min-height:44px;border-radius:11px}
+ .card{border-radius:16px}
+ .card h2{flex-wrap:wrap}
+ /* Ride planner */
+ .rseg{display:flex;width:100%}
+ .rseg button{flex:1;padding:6px 6px;line-height:1.15}
+ .rseg small{display:block;font-size:10.5px}
+ .pickbar .btn{white-space:nowrap;padding:8px 18px;flex:none}
+ /* Eat filters: tidy two-column grid */
+ .tool{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+ .tool>.seg{grid-column:1/-1;display:flex}
+ .tool>.seg button{flex:1}
+ .tool>select{width:100%;max-width:none}
+ .tool input[type=search]{grid-column:1/-1;min-width:0}
+ /* Plan itinerary: compact time, bigger move/remove buttons */
+ .it2{grid-template-columns:auto 8.6em minmax(0,1fr);row-gap:4px;column-gap:8px}
+ .it2>.nw{grid-column:3;justify-self:end;display:flex;gap:4px}
+ .it2 .x{min-width:38px;min-height:34px;border:1px solid var(--line);font-size:15px}
+ .it2 .x:disabled{opacity:.35}
+ .tin{width:100%;padding:6px 4px;font-size:15px}
+}
+@media(max-width:600px){
+ .nxw{font-size:44px}
+ /* Whole trip table: keep dollars, drop the £ and meter columns on small screens */
+ table.trip th:nth-child(3),table.trip td:nth-child(3),table.trip th:nth-child(5),table.trip td:nth-child(5),table.trip th:nth-child(7),table.trip td:nth-child(7){display:none}
+ table.trip th,table.trip td{padding:8px 6px}
+ table.trip input.amt{width:5.2em}
+ .card h2 small{flex-basis:100%}
+ .sh small{flex-basis:auto}
+ table.spt th:first-child,table.spt td:first-child{display:none}
+ table.spt td{padding:8px 4px}
+ table.spt td select{max-width:8.5em}
+ table.spt input.amt{width:4.8em}
+}
