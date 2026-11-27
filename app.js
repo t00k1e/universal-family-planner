@@ -356,8 +356,8 @@ function viewPlanner(){
   ${a?`<label class="mute nw" for="pp2">then hop to</label><select id="pp2" data-f="pp2">${parkOpts(b,'Stay all day')}</select>${b?`<label class="mute nw" for="pph">at</label><input id="pph" data-f="pph" type="time" value="${fmt(P[1][1]).padStart(5,'0')}" step="900">`:''}`:''}</div>
   ${b?`<p class="mute" style="margin:10px 0 0">${PARKS[a].short} to ${PARKS[b].short}: about ${travel(a,b)[0]} min by ${travel(a,b)[1]}</p>`:''}</div>
  <div class="grid2 g-plan" style="margin-top:16px">
-  <div> <div class="card"><h2>Itinerary <small>tick when done · edit a time or use ↑ ↓ to reorder</small></h2>${its.length?its.map((i,k)=>{const r=i.ride&&RID[i.ride];const v=r?sim(r,di,i.t,ck(di)):null;const nx=its[k+1];const d=dur(i,di);const clash=nx&&!i.done&&!nx.done&&nx.t<i.t+d;
-  return `<div class="it2 ${i.done?'done':''}"><button type="button" class="ck" data-a="tick" data-id="${i.id}" aria-label="${i.done?'Mark not done':'Mark done'}">${i.done?'✓':''}</button><input type="time" class="tin" value="${fmt(i.t).padStart(5,'0')}" data-f="itt" data-id="${i.id}" aria-label="Time"><span class="ti"><b>${esc(i.title)}</b><br><span class="mute" style="font-size:13px">${esc(i.type)}${r?` · ${PARKS[r.park].short} · ${v.w!=null?(xpOn(di)!=='none'&&!NOX.has(r.id)?'Express ~'+wt(r,di,i.t)+' min (standby ~'+v.w+')':'est. ~'+v.w+' min wait')+' at '+fmt(i.t)+(OUT.has(r.id)&&rainAt(di,i.t)>=40?' · <span class="up">outdoor ride, '+rainAt(di,i.t)+'% rain</span>':'')+(WET.has(r.id)&&tempAt(di,i.t)<20?' · <span class="up">water ride, '+tempAt(di,i.t)+'°C</span>':''):esc(v.s)+' at '+fmt(i.t)}`:''}</span>${clash?`<br><span class="up" style="font-size:13px">Likely still busy at ${fmt(nx.t)} (about ${d} min needed). Move ${esc(nx.title)} later?</span>`:''}</span><span class="nw"><button type="button" class="x" data-a="up" data-id="${i.id}" aria-label="Move earlier" ${k?'':'disabled'}>↑</button><button type="button" class="x" data-a="down" data-id="${i.id}" aria-label="Move later" ${nx?'':'disabled'}>↓</button><button type="button" class="x" data-a="deli" data-id="${i.id}" aria-label="Remove">✕</button></span></div>`}).join(''):'<div class="empty">Nothing planned for this day. Add items below, or pick must-dos and press Plan my day.</div>'}
+  <div> <div class="card"><h2>Itinerary <small>tick when done · edit a time or use ↑ ↓ to reorder</small></h2>${its.length?its.map((i,k)=>{const r=i.ride&&RID[i.ride];const v=r?sim(r,di,i.t,ck(di)):null;const nx=its[k+1];const d=dur(i,di,nx);const pv=its[k-1];const wkTxt=r&&pv&&pv.ride&&RID[pv.ride]&&RID[pv.ride].park===r.park?' · ~'+walkR(RID[pv.ride],r)+' min walk from '+esc(SHORT[pv.ride]):'';const clash=nx&&!i.done&&!nx.done&&nx.t<i.t+d;
+  return `<div class="it2 ${i.done?'done':''}"><button type="button" class="ck" data-a="tick" data-id="${i.id}" aria-label="${i.done?'Mark not done':'Mark done'}">${i.done?'✓':''}</button><input type="time" class="tin" value="${fmt(i.t).padStart(5,'0')}" data-f="itt" data-id="${i.id}" aria-label="Time"><span class="ti"><b>${esc(i.title)}</b><br><span class="mute" style="font-size:13px">${esc(i.type)}${r?` · ${PARKS[r.park].short} · ${v.w!=null?(xpOn(di)!=='none'&&!NOX.has(r.id)?'Express ~'+wt(r,di,i.t)+' min (standby ~'+v.w+')':'est. ~'+v.w+' min wait')+' at '+fmt(i.t)+(OUT.has(r.id)&&rainAt(di,i.t)>=40?' · <span class="up">outdoor ride, '+rainAt(di,i.t)+'% rain</span>':'')+(WET.has(r.id)&&tempAt(di,i.t)<20?' · <span class="up">water ride, '+tempAt(di,i.t)+'°C</span>':''):esc(v.s)+' at '+fmt(i.t)}`:''}${wkTxt}</span>${clash?`<br><span class="up" style="font-size:13px">Likely still busy at ${fmt(nx.t)} (about ${d} min needed). Move ${esc(nx.title)} later?</span>`:''}</span><span class="nw"><button type="button" class="x" data-a="up" data-id="${i.id}" aria-label="Move earlier" ${k?'':'disabled'}>↑</button><button type="button" class="x" data-a="down" data-id="${i.id}" aria-label="Move later" ${nx?'':'disabled'}>↓</button><button type="button" class="x" data-a="deli" data-id="${i.id}" aria-label="Remove">✕</button></span></div>`}).join(''):'<div class="empty">Nothing planned for this day. Add items below, or pick must-dos and press Plan my day.</div>'}
   <form class="addf" id="addf2"><input id="at2" type="time" value="${fmt(Math.min(1380,S.clock+60)).padStart(5,'0')}" aria-label="Time" required>${rides.length?`<select id="ar2" aria-label="Ride"><option value="">Not a ride</option>${rides.map(r=>`<option value="${r.id}">${esc(SHORT[r.id])}</option>`).join('')}</select>`:''}<input id="an2" type="text" maxlength="80" placeholder="Or type a meal or activity" aria-label="What"><select id="ay2" aria-label="Type"><option value="activity">Activity</option><option value="meal">Meal</option><option value="hop">Park hop</option></select><button class="btn" type="submit">Add</button></form>
   <p class="mute" style="font-size:13px;margin:10px 0 0">↑ and ↓ swap an item's time with its neighbour. Clash warnings assume ride wait + 10 min, meals 45 min, hops 25 min.</p></div></div>
   <div style="display:grid;gap:16px;align-content:start">
@@ -406,7 +406,7 @@ function drawPlan(){
  if(S.clock>=o&&S.clock<=c)g+=`<line x1="${X(S.clock)}" x2="${X(S.clock)}" y1="${M.t}" y2="${H-M.b}" stroke="var(--ink)" stroke-dasharray="3 3" opacity=".6"/>`;
  s.innerHTML=g;
 }
-function dur(i,di){if(i.type==='ride'&&i.ride){return(wt(RID[i.ride],di,i.t)??0)+10}return i.type==='meal'?45:i.type==='hop'?25:30}
+function dur(i,di,nx){if(i.type==='ride'&&i.ride){return(wt(RID[i.ride],di,i.t)??0)+RMIN+(nx&&nx.ride&&RID[nx.ride]?walkR(RID[i.ride],RID[nx.ride]):4)}return i.type==='meal'?45:i.type==='hop'?25:30}
 const REST=[
  ['Mythos Restaurant','ioa','The Lost Continent','table','Mediterranean',30],['Confisco Grille','ioa','Port of Entry','table','American',26],['Three Broomsticks','ioa','Hogsmeade','quick','British',20],['Thunder Falls Terrace','ioa','Jurassic Park','quick','BBQ',21],['Croissant Moon Bakery','ioa','Port of Entry','quick','Bakery',12],['Circus McGurkus Cafe Stoo-pendous','ioa','Seuss Landing','quick','American',16],
  ['Leaky Cauldron','usf','Diagon Alley','quick','British',21],['Finnegan’s Bar & Grill','usf','New York','table','Irish',28],['Krusty Burger','usf','Springfield','quick','Burgers',17],['Louie’s Italian','usf','New York','quick','Italian',16],['Mel’s Drive-In','usf','Hollywood','quick','American',17],['Lard Lad Donuts','usf','Springfield','quick','Snacks',8],
@@ -530,33 +530,45 @@ function viewSettings(){
  </div>`;
 }
 
-const RMIN=6,WALK=10;
+const RMIN=6;
+// Approximate ride positions in metres from each park's main entrance (x east, y north). Rough layout, not survey data.
+const RPOS={hagrid:[-230,560],fj:[-180,470],hippo:[-200,520],velo:[60,620],jpra:[220,560],kong:[310,470],barges:[340,380],ripsaw:[330,320],hulk:[260,170],spidey:[230,120],doom:[290,210],cat:[-150,120],
+ gringotts:[-300,650],hwexp:[-230,590],mummy:[-280,280],ff:[-320,430],rockit:[-60,120],trans:[-140,110],minion:[90,130],villain:[120,160],mib:[60,650],simpsons:[160,560],
+ ministry:[350,820],mario:[-480,320],minecart:[-420,380],yoshi:[-450,260],stardust:[110,450],carousel:[0,300],monsters:[-360,760],werewolf:[-300,820],hiccup:[500,340],rally:[540,400]};
+const ENTRANCE=[0,0];
+const rpos=r=>RPOS[r.id]||ENTRANCE;
+// Walking minutes between two spots: paths run about a third longer than a straight line; family pace in crowds about 65 m a minute; 2 minutes to get out of one ride and into the next queue.
+const walkMin=(a,b)=>{if(!a||!b)return 0;const d=Math.hypot(a[0]-b[0],a[1]-b[1]);return d<1?0:Math.max(3,Math.round(2+d*1.35/65))};
+const walkR=(a,b)=>a.park!==b.park?0:a.area===b.area?Math.min(4,walkMin(rpos(a),rpos(b))||3):walkMin(rpos(a),rpos(b));
+function lastPos(di,p){const d=items(di).filter(i=>i.done&&i.ride&&RID[i.ride]&&RID[i.ride].park===p).sort((a,b)=>b.t-a.t)[0];return d?rpos(RID[d.ride]):null}
 function fixedOf(di){return items(di).filter(i=>!i.done&&!i.ride).map(i=>({s:i.t,e:i.t+(i.type==='meal'?45:i.type==='hop'?25:30)}))}
-function evalOrder(order,di,start,end,fx){
- let t=start,tot=0,late=0,pen=0;const out=[];
+function evalOrder(order,di,start,end,fx,from){
+ let t=start,tot=0,late=0,pen=0,walk=0,prev=from||null;const out=[];
  for(const r of order){
-  for(let g=0;g<12;g++){const[o]=hours(r,di);if(t<o)t=o;const w0=wt(r,di,t);const w=w0==null?90:w0;const d=w+RMIN;const f=fx.find(f=>t<f.e&&t+d>f.s);if(f){t=f.e;continue}tot+=w;pen+=wxPen(r,di,t);out.push({r,t,w});t+=d+WALK;break}
+  const wk=prev?walkMin(prev,rpos(r)):0;walk+=wk;t+=wk;prev=rpos(r);
+  for(let g=0;g<12;g++){const[o]=hours(r,di);if(t<o)t=o;const w0=wt(r,di,t);const w=w0==null?90:w0;const d=w+RMIN;const f=fx.find(f=>t<f.e&&t+d>f.s);if(f){t=f.e;continue}tot+=w;pen+=wxPen(r,di,t);out.push({r,t,w,wk});t+=d;break}
   if(t>end)late+=t-end;
  }
- return{tot,score:tot+late*5+pen,out};
+ return{tot,walk,score:tot+walk+late*5+pen,out};
 }
 function perms(a){if(a.length<=1)return[a];const res=[];a.forEach((x,i)=>{for(const p of perms(a.slice(0,i).concat(a.slice(i+1))))res.push([x,...p])});return res}
-function bestOrder(rs,di,start,end,fx){
- if(!rs.length)return{out:[],tot:0,score:0};
- if(rs.length<=8){let b=null;for(const p of perms(rs)){const e=evalOrder(p,di,start,end,fx);if(!b||e.score<b.score)b=e}return b}
- const left=rs.slice(),order=[];let t=start;
- while(left.length){let bi=0,bs=1e9;left.forEach((r,i)=>{const now=sim(r,di,t,ck(di)).w??999,later=sim(r,di,t+90,ck(di)).w??now,sc=now-(later-now)*.5;if(sc<bs){bs=sc;bi=i}});order.push(left.splice(bi,1)[0]);const e=evalOrder(order,di,start,end,fx);const l=e.out[e.out.length-1];t=l?l.t+l.w+RMIN+WALK:t}
- return evalOrder(order,di,start,end,fx);
+function bestOrder(rs,di,start,end,fx,from){
+ if(!rs.length)return{out:[],tot:0,walk:0,score:0};
+ if(rs.length<=8){let b=null;for(const p of perms(rs)){const e=evalOrder(p,di,start,end,fx,from);if(!b||e.score<b.score)b=e}return b}
+ const left=rs.slice(),order=[];let t=start,pos=from||null;
+ while(left.length){let bi=0,bs=1e9;left.forEach((r,i)=>{const wk=pos?walkMin(pos,rpos(r)):0,now=sim(r,di,t+wk,ck(di)).w??999,later=sim(r,di,t+wk+90,ck(di)).w??now,sc=now+wk-(later-now)*.5;if(sc<bs){bs=sc;bi=i}});order.push(left.splice(bi,1)[0]);const e=evalOrder(order,di,start,end,fx,from);const l=e.out[e.out.length-1];if(l){t=l.t+l.w+RMIN;pos=rpos(l.r)}}
+ return evalOrder(order,di,start,end,fx,from);
 }
 function segOf(di,p){const w=window4(di,p);if(!w)return null;const anyEE=RIDES.some(r=>r.park===p&&r.ee);return[Math.max(w[0],PARKS[p].open-(anyEE?60:0)),Math.min(w[1],PARKS[p].close+(late(di)?60:0))]}
 function planDay(btn){
  let picked=false;if(btn&&!(S.must[S.day]||[]).length&&ps(S.day).length){const P=ps(S.day);S.must[S.day]=P.flatMap(([p])=>RIDES.filter(r=>r.park===p).sort((a,b)=>b.pop-a.pop).slice(0,P.length>1?2:4).map(r=>r.id));picked=true}
  const di=S.day,must=(S.must[di]||[]).map(id=>RID[id]).filter(r=>r&&!items(di).some(i=>i.done&&i.ride===r.id));
  S.it[di]=(S.it[di]||[]).filter(i=>i.done||!i.ride||!(i.auto||must.some(r=>r.id===i.ride)));
- const started=items(di).some(i=>i.done);const fx=fixedOf(di);let tot=0,n=0;
- for(const[p]of ps(di)){const sg=segOf(di,p);if(!sg)continue;const st=started?Math.max(sg[0],S.clock):sg[0];if(st>=sg[1])continue;const rs=must.filter(r=>r.park===p);const b=bestOrder(rs,di,st,sg[1],fx);
-  b.out.forEach(x=>{S.it[di].push({id:uid(),t:x.t,type:'ride',title:SHORT[x.r.id],ride:x.r.id,done:false,auto:true});tot+=x.w;n++})}
- S.flash=(picked?'No must-dos were picked for this day, so I used the most popular rides. Change them on Must-dos. ':'')+(n?`${started?'Planned the rest of the day from '+fmt(S.clock)+': ':''}${n} must-dos placed, about ${tot} min of waiting in total (estimate). See the plan.`:'No must-dos fit the parks planned for this day.');
+ const started=items(di).some(i=>i.done);const fx=fixedOf(di);let tot=0,n=0,wk=0;const miss=[];
+ for(const[p]of ps(di)){const sg=segOf(di,p);if(!sg)continue;const st=started?Math.max(sg[0],S.clock):sg[0];if(st>=sg[1])continue;const rs=must.filter(r=>r.park===p);const b=bestOrder(rs,di,st,sg[1],fx,started?lastPos(di,p):ENTRANCE);wk+=b.walk||0;
+  b.out.filter(x=>x.t>=sg[1]).forEach(x=>miss.push(SHORT[x.r.id]));
+  b.out.filter(x=>x.t<sg[1]).forEach(x=>{S.it[di].push({id:uid(),t:x.t,type:'ride',title:SHORT[x.r.id],ride:x.r.id,done:false,auto:true});tot+=x.w;n++})}
+ S.flash=(picked?'No must-dos were picked for this day, so I used the most popular rides. Change them on Must-dos. ':'')+(n?`${started?'Planned the rest of the day from '+fmt(S.clock)+': ':''}${n} must-dos placed, about ${tot} min of waiting and ${wk} min of walking in total (estimates), with nearby rides grouped together.${miss.length?' Didn’t fit before you leave the park: '+miss.join(', ')+'.':''} See the plan.`:'No must-dos fit the parks planned for this day.');
  render();setTimeout(()=>{S.flash=null;save()},0);
 }
 let RP=null;
@@ -588,7 +600,7 @@ function rpCompute(){
  const oldCost=evalOrder(its.slice().sort((a,b)=>a.t-b.t).map(i=>RID[i.ride]).filter(r=>!(rd[r.id]&&rd[r.id].closed)),di,m,sg[1],fixedOf(di).filter(x=>x.e>m)).tot;
  const openR=list.filter(r=>!(rd[r.id]&&rd[r.id].closed)),closedR=list.filter(r=>rd[r.id]&&rd[r.id].closed);
  const fx=fixedOf(di).filter(x=>x.e>m);
- const nb=bestOrder(openR,di,m,sg[1],fx);
+ const nb=bestOrder(openR,di,m,sg[1],fx,lastPos(di,p));
  S.obs[di]=old;if(!old)delete S.obs[di];
  RP={stage:2,obs:{at:m,f:Math.round(f*100)/100,rd},plan:nb.out,closed:closedR,p,sg};const RPsg=sg;
  const oldList=its.slice().sort((a,b)=>a.t-b.t);
